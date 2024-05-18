@@ -134,9 +134,9 @@ def make_match_single(
     return matches
 
 
-def make_judge_pairwise(judge_model, judge_prompts):
+def make_judge_pairwise(judge_model, judge_prompts, system=False):
     judges = {}
-    judges["default"] = Judge(judge_model, judge_prompts["pair-v2"])
+    judges["default"] = Judge(judge_model, judge_prompts[f"pair-v2{'-system' if system else ''}"])
     judges["math"] = Judge(judge_model, judge_prompts["pair-math-v1"], ref_based=True)
     judges["default-mt"] = Judge(
         judge_model, judge_prompts["pair-v2-multi-turn"], multi_turn=True
@@ -150,9 +150,9 @@ def make_judge_pairwise(judge_model, judge_prompts):
     return judges
 
 
-def make_judge_single(judge_model, judge_prompts):
+def make_judge_single(judge_model, judge_prompts, system=False):
     judges = {}
-    judges["default"] = Judge(judge_model, judge_prompts["single-v1"])
+    judges["default"] = Judge(judge_model, judge_prompts[f"single-v1{'-system' if system else ''}"])
     judges["math"] = Judge(judge_model, judge_prompts["single-math-v1"], ref_based=True)
     judges["default-mt"] = Judge(
         judge_model, judge_prompts["single-v1-multi-turn"], multi_turn=True
@@ -207,6 +207,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--first-n", type=int, help="A debug option. Only run the first `n` judgments."
     )
+    parser.add_argument(
+        '--system', action='store_true', help='Has system prompt'
+    )
     args = parser.parse_args()
 
     question_file = f"data/{args.bench_name}/question.jsonl"
@@ -232,7 +235,7 @@ if __name__ == "__main__":
         models = args.model_list
 
     if args.mode == "single":
-        judges = make_judge_single(args.judge_model, judge_prompts)
+        judges = make_judge_single(args.judge_model, judge_prompts, args.system)
         play_a_match_func = play_a_match_single
         output_file = (
             f"data/{args.bench_name}/model_judgment/{args.judge_model}_single.jsonl"
@@ -240,7 +243,7 @@ if __name__ == "__main__":
         make_match_func = make_match_single
         baseline_model = None
     else:
-        judges = make_judge_pairwise(args.judge_model, judge_prompts)
+        judges = make_judge_pairwise(args.judge_model, judge_prompts, args.system)
         play_a_match_func = play_a_match_pair
         output_file = (
             f"data/{args.bench_name}/model_judgment/{args.judge_model}_pair.jsonl"
